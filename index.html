@@ -244,7 +244,7 @@
                   ${isIncorrect ? `
                     <div class="mt-4 flex items-start space-x-2 text-red-600 animate-pulse">
                       ${errorIcon}
-                      <span class="font-medium">შეცდომაა. სცადეთ კიდევ ერთხელ ან ნახეთ სწორი პასუხი.</span>
+                      <span class="font-medium">შეცდომაა!</span>
                     </div>
                     ${renderDiffViewer(state.userInput, currentSentence.corrected)}
                   ` : ''}
@@ -252,7 +252,7 @@
                   ${isCorrect ? `
                     <div class="mt-4 flex items-start space-x-2 text-green-600">
                       ${successIcon}
-                      <span class="font-medium">სწორია! შესანიშნავი ნამუშევარია.</span>
+                      <span class="font-medium">სწორია!</span>
                     </div>
                   ` : ''}
                 </div>
