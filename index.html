@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ka">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>რედაქტირება</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Noto Sans Georgian', sans-serif;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
+    <div id="root"></div>
+    <script type="module">
+      
+      // --- DATA ---
+      const EXERCISE_DATA = [
+        {
+          id: 1,
+          original: "ფეხბურთი სპორტის ყველაზე პოპულარული სახეობაა მსოფლიოში.",
+          corrected: "ფეხბურთი სპორტის ყველაზე პოპულარული სახეობაა მსოფლიოში.",
+          hasErrors: false
+        },
+        {
+          id: 2,
+          original: "ეს თამაში XIX საუკუნეში შეიქმნა ინგლისში.",
+          corrected: "ეს თამაში XIX საუკუნეში შეიქმნა ინგლისში.",
+          hasErrors: false
+        },
+        {
+          id: 3,
+          original: "ინგლისელებმა შემოიტანეს ის საქართველოშიც.",
+          corrected: "ინგლისელებმა შემოიტანეს ის საქართველოშიც.",
+          hasErrors: false
+        },
+        {
+          id: 4,
+          original: "ფოთისა და ბათუმის მოსახლეობა ხშირად ხედავდნენ თუ როგორ თამაშობდნენ „ფუტბოლს“ ბრიტანულ გემების მეზღვაურები.",
+          corrected: "ფოთისა და ბათუმის მოსახლეობა ხშირად ხედავდა, თუ როგორ თამაშობდნენ „ფუტბოლს“ ბრიტანული გემების მეზღვაურები.",
+          hasErrors: true
+        },
+        {
+          id: 5,
+          original: "სპორტის ეს სახეობა სულ მალე ქართველებმაც შეიყვარეს.",
+          corrected: "სპორტის ეს სახეობა სულ მალე ქართველებმაც შეიყვარეს.",
+          hasErrors: false
+        },
+        {
+          id: 6,
+          original: "ფეხბურთი ქართულ პრესაში პირველათ 1890 წელს არის ნახსენები.",
+          corrected: "ფეხბურთი ქართულ პრესაში პირველად 1890 წელს არის ნახსენები.",
+          hasErrors: true
+        },
+        {
+          id: 7,
+          original: "საქართველოს ზღვის პირა ქალაქების შემდეგ ფეხბურთი თბილისშიც შემოვიდა.",
+          corrected: "საქართველოს ზღვისპირა ქალაქების შემდეგ ფეხბურთი თბილისშიც შემოვიდა.",
+          hasErrors: true
+        },
+        {
+          id: 8,
+          original: "ამავე პერიოდში ინგლისურიდან თამაშის წესები ითარგმნა.",
+          corrected: "ამავე პერიოდში ინგლისურიდან თამაშის წესები ითარგმნა.",
+          hasErrors: false
+        },
+        {
+          id: 9,
+          original: "1906 წელს ჩამოყალიბდა ფეხბურთის მოყვარულთა წრე რომელსაც ვარჯიშისათვის სათანადო გარემო ჭირდებოდა.",
+          corrected: "1906 წელს ჩამოყალიბდა ფეხბურთის მოყვარულთა წრე, რომელსაც ვარჯიშისათვის სათანადო გარემო სჭირდებოდა.",
+          hasErrors: true
+        },
+        {
+          id: 10,
+          original: "გადაწყდა რომ საფეხბურთო მოედანისათვის შესაფერისი ადგილი დიდუბის იპოდრომზე გამოეყოთ.",
+          corrected: "გადაწყდა, რომ საფეხბურთო მოედნისათვის შესაფერისი ადგილი დიდუბის იპოდრომზე გამოეყოთ.",
+          hasErrors: true
+        },
+        {
+          id: 11,
+          original: "პირველი ოფიციალური შეხვედრა 1911 წელს გაიმართა.",
+          corrected: "პირველი ოფიციალური შეხვედრა 1911 წელს გაიმართა.",
+          hasErrors: false
+        },
+        {
+          id: 12,
+          original: "ერთი წლის შემდეგ ჩატარდა ქალაქის ჩემპიონატი რომელშიც გამარჯვება მოიხვეჭა ვაჟთა II გიმნაზიის გუნდმა.",
+          corrected: "ერთი წლის შემდეგ ჩატარდა ქალაქის ჩემპიონატი, რომელშიც გამარჯვება მოიპოვა ვაჟთა II გიმნაზიის გუნდმა.",
+          hasErrors: true
+        },
+        {
+          id: 13,
+          original: "1923 წელს ერთმანეთს უკვე 27 გუნდი ეჯიბრებოდა.",
+          corrected: "1923 წელს ერთმანეთს უკვე 27 გუნდი ეჯიბრებოდა.",
+          hasErrors: false
+        },
+        {
+          id: 14,
+          original: "1925 წელს შეიქმნა საფეხბურთო გუნდი „დინამო“ რის სახელთანაც არის დაკავშირებული ქართული ფეხბურთის არაერთი მნიშვნელოვანი წარმატება.",
+          corrected: "1925 წელს შეიქმნა საფეხბურთო გუნდი „დინამო“, რომლის სახელთანაც არის დაკავშირებული ქართული ფეხბურთის არაერთი მნიშვნელოვანი წარმატება.",
+          hasErrors: true
+        },
+        {
+          id: 15,
+          original: "1990 წლის 15 თებერვალს დაარსდა საქართველოს ფეხბურთის ფედერაცია რომელმაც იმავე წელს უხელმძღვანელა საქართველოს პირველ დამოუკიდებელ ჩემპიონატსა და თასის გათამაშებას.",
+          corrected: "1990 წლის 15 თებერვალს დაარსდა საქართველოს ფეხბურთის ფედერაცია, რომელმაც იმავე წელს უხელმძღვანელა საქართველოს პირველ დამოუკიდებელ ჩემპიონატსა და თასის გათამაშებას.",
+          hasErrors: true
+        }
+      ];
+
+      // --- STATE ---
+      const state = {
+        userName: "",
+        isStarted: false,
+        currentIndex: 0,
+        userInput: "",
+        status: "IDLE", // IDLE, CORRECT, INCORRECT
+        isFinished: false,
+        results: [] // Array to store { id, userInput, corrected, isCorrect }
+      };
+
+      // --- COMPONENT RENDERERS ---
+
+      function renderProgressBar() {
+        const current = state.currentIndex + 1;
+        const total = EXERCISE_DATA.length;
+        const percentage = Math.min(100, Math.max(0, ((current) / total) * 100));
+        return `
+          <div class="w-full bg-slate-200 rounded-full h-2.5 mb-6">
+            <div
+              class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              style="width: ${percentage}%"
+            ></div>
+            <div class="text-xs text-slate-500 mt-1 text-right">
+              ${current} / ${total}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderDiffViewer(input, correct) {
+        // Split strings into arrays of words
+        const arrInput = input.trim().split(/\s+/);
+        const arrCorrect = correct.trim().split(/\s+/);
+        
+        const n = arrInput.length;
+        const m = arrCorrect.length;
+
+        // --- Longest Common Subsequence (LCS) Algorithm ---
+        
+        // dp[i][j] stores the length of LCS for arrInput[0..i-1] and arrCorrect[0..j-1]
+        // Initialize (n+1) x (m+1) matrix with zeros
+        const dp = [];
+        for (let i = 0; i <= n; i++) {
+          dp[i] = new Array(m + 1).fill(0);
+        }
+
+        // Fill DP table
+        for (let i = 1; i <= n; i++) {
+          for (let j = 1; j <= m; j++) {
+            if (arrInput[i - 1] === arrCorrect[j - 1]) {
+              dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+              dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+          }
+        }
+
+        // Backtrack to find which indices in the Correct Version are part of the LCS
+        let i = n;
+        let j = m;
+        const correctIndicesInLCS = new Set();
+
+        while (i > 0 && j > 0) {
+          if (arrInput[i - 1] === arrCorrect[j - 1]) {
+            // Match found. Record index (j-1) from Correct array.
+            correctIndicesInLCS.add(j - 1);
+            i--;
+            j--;
+          } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            i--;
+          } else {
+            j--;
+          }
+        }
+
+        // --- Render ---
+        
+        const html = arrCorrect.map((word, index) => {
+          // If the word exists in the LCS (isMatch is true), it means the user has it too -> Neutral color.
+          // If it is NOT in LCS, it means the user is missing it or has something else -> Green highlight.
+          const isMatch = correctIndicesInLCS.has(index);
+          const className = !isMatch ? "text-green-600 font-bold bg-green-50 px-1 rounded" : "text-slate-800";
+          return `<span class="${className}">${word} </span>`;
+        }).join('');
+
+        return `
+          <div class="mt-4 p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">სწორი ვერსია:</h3>
+            <p class="text-lg leading-relaxed">${html}</p>
+          </div>
+        `;
+      }
+
+      function getFormattedDate() {
+        const now = new Date();
+        return now.toLocaleString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+
+      // --- MAIN RENDER FUNCTION ---
+      function render() {
+        const root = document.getElementById('root');
+        
+        // --- 1. START SCREEN ---
+        if (!state.isStarted) {
+          root.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+              <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
+                <div class="text-center mb-8">
+                  <h1 class="text-3xl font-extrabold text-slate-900 mb-2">ტექსტის რედაქტირება</h1>
+                  <p class="text-slate-600">შეიყვანეთ თქვენი მონაცემები სავარჯიშოს დასაწყებად</p>
+                </div>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label for="userName" class="block text-sm font-medium text-slate-700 mb-1">სახელი და გვარი</label>
+                    <input 
+                      type="text" 
+                      id="userName" 
+                      value="${state.userName}"
+                      placeholder="მაგ: კოტე ლომიძე"
+                      class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      oninput="window.handleNameInput(this.value)"
+                    />
+                  </div>
+                  
+                  <button
+                    onclick="window.handleStart()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md ${!state.userName.trim() ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${!state.userName.trim() ? 'disabled' : ''}
+                  >
+                    დაწყება
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 2. FINISHED SCREEN ---
+        if (state.isFinished) {
+          const correctCount = state.results.filter(r => r.isCorrect).length;
+          const totalCount = EXERCISE_DATA.length;
+          const scorePercent = Math.round((correctCount / totalCount) * 100);
+
+          root.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+              <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full text-center">
+                <div class="mb-6 flex justify-center">
+                   <span class="text-6xl">🎉</span>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">სავარჯიშო დასრულებულია!</h1>
+                <p class="text-lg text-slate-800 font-medium mb-8">${state.userName}</p>
+                
+                <div class="space-y-3">
+                  <button
+                    onclick="window.handleCopyReport()"
+                    class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-300"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    შედეგის დაკოპირება
+                  </button>
+
+                  <button
+                    onclick="window.handleRestart()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                  >
+                    თავიდან დაწყება
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 3. EXERCISE SCREEN ---
+        const currentSentence = EXERCISE_DATA[state.currentIndex];
+        const isCorrect = state.status === 'CORRECT';
+        const isIncorrect = state.status === 'INCORRECT';
+
+        // Dynamic Classes
+        let cardBorderClass = 'border-slate-200';
+        if (isCorrect) cardBorderClass = 'border-green-500 shadow-green-100';
+        if (isIncorrect) cardBorderClass = 'border-red-500 shadow-red-100';
+
+        let textareaClass = 'bg-white border-slate-300 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500';
+        if (isCorrect) textareaClass = 'bg-green-50 border-green-300 text-green-900 focus:ring-green-500';
+        if (isIncorrect) textareaClass = 'bg-red-50 border-red-300 text-red-900 focus:ring-red-500';
+
+        // Icons
+        const errorIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+        const successIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+
+        root.innerHTML = `
+          <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mx-auto">
+              
+              <div class="mb-4 flex justify-between items-end">
+                <div>
+                   <h1 class="text-3xl font-extrabold text-slate-900 mb-1">ტექსტის რედაქტორი</h1>
+                   <p class="text-slate-600 text-sm">მოსწავლე: <span class="font-semibold text-slate-800">${state.userName}</span></p>
+                </div>
+              </div>
+
+              ${renderProgressBar()}
+
+              <div class="bg-white rounded-xl shadow-lg border transition-colors duration-300 overflow-hidden ${cardBorderClass}">
+                
+                <div class="p-6 sm:p-8">
+                  <label for="editor" class="block text-sm font-medium text-slate-700 mb-2">
+                    დაარედაქტირეთ წინადადება:
+                  </label>
+                  <textarea
+                    id="editor"
+                    rows="4"
+                    class="w-full p-4 text-lg rounded-lg border focus:ring-2 focus:outline-none transition-all resize-none ${textareaClass}"
+                    ${state.status !== 'IDLE' ? 'disabled' : ''}
+                  >${state.userInput}</textarea>
+
+                  ${isIncorrect ? `
+                    <div class="mt-4 flex items-start space-x-2 text-red-600 animate-pulse">
+                      ${errorIcon}
+                      <span class="font-medium">შეცდომაა!</span>
+                    </div>
+                    ${renderDiffViewer(state.userInput, currentSentence.corrected)}
+                  ` : ''}
+                  
+                  ${isCorrect ? `
+                    <div class="mt-4 flex items-start space-x-2 text-green-600">
+                      ${successIcon}
+                      <span class="font-medium">სწორია!</span>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div class="bg-slate-50 px-6 py-4 flex justify-between items-center border-t border-slate-200">
+                   <div class="text-sm text-slate-500">
+                     ${state.currentIndex + 1} / ${EXERCISE_DATA.length}
+                   </div>
+                   <div>
+                     ${state.status === 'IDLE' ? `
+                       <button
+                         onclick="window.handleCheck()"
+                         class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm"
+                       >
+                         შემოწმება
+                       </button>
+                     ` : ''}
+                     ${state.status === 'INCORRECT' ? `
+                       <div class="space-x-3">
+                         <button
+                          onclick="window.handleRetry()"
+                          class="text-slate-600 hover:text-slate-900 font-medium py-2 px-4 transition-colors"
+                         >
+                           თავიდან ცდა
+                         </button>
+                         <button
+                           onclick="window.handleNext()"
+                           class="bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm"
+                         >
+                           შემდეგი
+                         </button>
+                       </div>
+                     ` : ''}
+                     ${state.status === 'CORRECT' ? `
+                       <button
+                         onclick="window.handleNext()"
+                         class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm flex items-center"
+                       >
+                         შემდეგი
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                         </svg>
+                       </button>
+                     ` : ''}
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Re-attach listeners after rendering
+        const textarea = document.getElementById('editor');
+        if (textarea) {
+            textarea.addEventListener('input', (e) => {
+                state.userInput = e.target.value;
+                if (state.status !== 'IDLE') {
+                    state.status = 'IDLE';
+                    const cursorPosition = textarea.selectionStart;
+                    render();
+                    const newTextarea = document.getElementById('editor');
+                    if (newTextarea) {
+                        newTextarea.focus();
+                        newTextarea.setSelectionRange(cursorPosition, cursorPosition);
+                    }
+                }
+            });
+            
+            if (state.status === 'IDLE' && state.userInput === EXERCISE_DATA[state.currentIndex].original && !isCorrect) {
+                 textarea.focus();
+            }
+        }
+      }
+
+      // --- HANDLERS ---
+      
+      window.handleNameInput = function(value) {
+        state.userName = value;
+        // Re-render to update button state
+        const btn = document.querySelector('button');
+        if (btn) {
+           if (value.trim()) {
+             btn.disabled = false;
+             btn.classList.remove('opacity-50', 'cursor-not-allowed');
+           } else {
+             btn.disabled = true;
+             btn.classList.add('opacity-50', 'cursor-not-allowed');
+           }
+        }
+      };
+
+      window.handleStart = function() {
+        if (!state.userName.trim()) return;
+        state.isStarted = true;
+        render();
+      };
+
+      window.handleCheck = function() {
+        if (state.status !== 'IDLE') return;
+
+        const currentSentence = EXERCISE_DATA[state.currentIndex];
+        const normalizedInput = state.userInput.trim();
+        const normalizedCorrect = currentSentence.corrected.trim();
+
+        if (normalizedInput === normalizedCorrect) {
+          state.status = 'CORRECT';
+        } else {
+          state.status = 'INCORRECT';
+        }
+        render();
+      };
+
+      window.handleNext = function() {
+        // Record result
+        const currentData = EXERCISE_DATA[state.currentIndex];
+        state.results.push({
+          id: currentData.id,
+          original: currentData.original,
+          corrected: currentData.corrected,
+          userInput: state.userInput,
+          isCorrect: state.status === 'CORRECT'
+        });
+
+        if (state.currentIndex < EXERCISE_DATA.length - 1) {
+          state.currentIndex++;
+          state.userInput = EXERCISE_DATA[state.currentIndex].original;
+          state.status = 'IDLE';
+          render();
+        } else {
+          state.isFinished = true;
+          render();
+        }
+      };
+
+      window.handleRetry = function() {
+        state.status = 'IDLE';
+        render();
+      };
+
+      window.handleRestart = function() {
+        // Keep userName and isStarted, reset game state
+        state.currentIndex = 0;
+        state.userInput = EXERCISE_DATA[0].original;
+        state.status = 'IDLE';
+        state.isFinished = false;
+        state.results = [];
+        render();
+      };
+
+      window.handleCopyReport = function() {
+        const date = getFormattedDate();
+        const correctCount = state.results.filter(r => r.isCorrect).length;
+        const total = EXERCISE_DATA.length;
+        const percent = Math.round((correctCount / total) * 100);
+
+        let report = `რედაქტირების სავარჯიშო\n`;
+        report += `მოსწავლე: ${state.userName}\n`;
+        report += `თარიღი: ${date}\n`;
+        report += `შედეგი: ${correctCount} / ${total} (${percent}%)\n\n`;
+        report += `დეტალური ანგარიში:\n`;
+        report += `-------------------\n`;
+
+        state.results.forEach((res, index) => {
+           const icon = res.isCorrect ? "✅ სწორია" : "❌ შეცდომაა";
+           report += `${index + 1}. ${icon}\n`;
+           if (!res.isCorrect) {
+             report += `   თქვენი ვერსია: ${res.userInput}\n`;
+             report += `   სწორი ვერსია:  ${res.corrected}\n`;
+           } else {
+             report += `   ${res.corrected}\n`;
+           }
+           report += `\n`;
+        });
+
+        navigator.clipboard.writeText(report).then(() => {
+          alert("შედეგები დაკოპირდა!");
+        }).catch(err => {
+          console.error("Failed to copy: ", err);
+          alert("კოპირება ვერ მოხერხდა.");
+        });
+      };
+
+      // --- INIT ---
+      state.userInput = EXERCISE_DATA[0].original;
+      render();
+
+    </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
