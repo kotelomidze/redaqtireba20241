@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ka">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>რედაქტირება</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Noto Sans Georgian', sans-serif;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
+    <div id="root"></div>
+    <script type="module">
+      
+      // --- DATA ---
+      const EXERCISE_DATA = [
+        {
+          id: 1,
+          original: "ცნობილი ქართველი მხატვარი ქეთევან მაღალაშვილი 1894 წელს დაიბადა ქუთაისში. 1912 წელს ქეთევანი თბილისის სამხატვრო სასწავლებელში ჩაირიცხა.",
+          corrected: "ცნობილი ქართველი მხატვარი ქეთევან მაღალაშვილი 1894 წელს დაიბადა ქუთაისში. 1912 წელს ქეთევანი თბილისის სამხატვრო სასწავლებელში ჩაირიცხა.",
+          hasErrors: false
+        },
+        {
+          id: 2,
+          original: "შემდეგ მან სწავლა გააგრძელა მოსკოვში ფერწერის სკოლაში. 1917 წელს იგი თბილისში დაბრუნდა.",
+          corrected: "შემდეგ მან სწავლა გააგრძელა მოსკოვში, ფერწერის სკოლაში. 1917 წელს იგი თბილისში დაბრუნდა.",
+          hasErrors: true
+        },
+        {
+          id: 3,
+          original: "აქ მაღალაშვილი შეხვდა ქართული კულტურის დიდ მოამაგეს, დიმიტრი შევარდნაძეს ვისი რჩევითაც ქართველი მოღვაწეების პორტრეტების შექმნა დაიწყო.",
+          corrected: "აქ მაღალაშვილი შეხვდა ქართული კულტურის დიდ მოამაგეს, დიმიტრი შევარდნაძეს, რომლის რჩევითაც ქართველი მოღვაწეების პორტრეტების შექმნა დაიწყო.",
+          hasErrors: true
+        },
+        {
+          id: 4,
+          original: "ამავე პერიოდში ქეთევანი მონაწილეობდა ექსპედიციებში რომელიც ქართველ ხელოვანთა მიერ იყო ორგანიზებული.",
+          corrected: "ამავე პერიოდში ქეთევანი მონაწილეობდა ექსპედიციებში, რომლებიც ქართველ ხელოვანთა მიერ იყო ორგანიზებული.",
+          hasErrors: true
+        },
+        {
+          id: 5,
+          original: "ახალგაზრდა მხატვრები მუშაობდნენ საქართველოს სხვადასხვა კუთხეში რადგან ძველი ფრესკები შეესწავლათ და მათი ასლების გადაღება მოეხდინათ.",
+          corrected: "ახალგაზრდა მხატვრები მუშაობდნენ საქართველოს სხვადასხვა კუთხეში, რათა ძველი ფრესკები შეესწავლათ და მათი ასლები გადაეღოთ.",
+          hasErrors: true
+        },
+        {
+          id: 6,
+          original: "1921 წლიდან ქეთევანმა მუშაობა დაიწყო სურათების ეროვნულ გალერეაში. ამავე პერიოდში მან თეატრალურ სტუდიისათვის შექმნა ქართული ტანსაცმლის ესკიზები.",
+          corrected: "1921 წლიდან ქეთევანმა მუშაობა დაიწყო სურათების ეროვნულ გალერეაში. ამავე პერიოდში მან თეატრალური სტუდიისათვის შექმნა ქართული ტანსაცმლის ესკიზები.",
+          hasErrors: true
+        },
+        {
+          id: 7,
+          original: "1923 წელს მაღალაშვილი სასწავლებლად მიუნხენში გაემგზავრა, მოგვიანებით კი საცხოვრებლად პარიზში გადავიდა სადაც კოლაროსის აკადემიაში სწავლობდა ელენე ახვლედიანთან ერთად.",
+          corrected: "1923 წელს მაღალაშვილი სასწავლებლად მიუნხენში გაემგზავრა, მოგვიანებით კი საცხოვრებლად პარიზში გადავიდა, სადაც კოლაროსის აკადემიაში სწავლობდა ელენე ახვლედიანთან ერთად.",
+          hasErrors: true
+        },
+        {
+          id: 8,
+          original: "პარიზში ცხოვრებამ და ცნობილ მხატვრებთან ურთიერთობამ მაღალაშვილის შემოქმედებაზე დიდი გავლენა იქონია.",
+          corrected: "პარიზში ცხოვრებამ და ცნობილ მხატვრებთან ურთიერთობამ მაღალაშვილის შემოქმედებაზე დიდი გავლენა იქონია.",
+          hasErrors: false
+        },
+        {
+          id: 9,
+          original: "ხელოვნებათმცოდნეების შეფასებით პროფესიულმა დაოსტატებამ მხატვარს მეტი სილაღე შეძინა და ის შინაგანად გაანთავისუფლა.",
+          corrected: "ხელოვნებათმცოდნეების შეფასებით, პროფესიულმა დაოსტატებამ მხატვარს მეტი სილაღე შესძინა და ის შინაგანად გაათავისუფლა.",
+          hasErrors: true
+        },
+        {
+          id: 10,
+          original: "1926 წლიდან ქეთევან მაღალაშვილი ეროვნულ გალერეაში მუშაობდა რესტავრატორათ და აგრძელებდა პორტრეტების ხატვას. მან თავისი დროის ბევრი გამოჩენილი ადამიანის პორტრეტი შექმნა.",
+          corrected: "1926 წლიდან ქეთევან მაღალაშვილი ეროვნულ გალერეაში მუშაობდა რესტავრატორად და აგრძელებდა პორტრეტების ხატვას. მან თავისი დროის ბევრი გამოჩენილი ადამიანის პორტრეტი შექმნა.",
+          hasErrors: true
+        }
+      ];
+
+      // --- STATE ---
+      const state = {
+        userName: "",
+        isStarted: false,
+        currentIndex: 0,
+        userInput: "",
+        isFinished: false,
+        results: [] // Array to store { id, userInput, corrected, isCorrect }
+      };
+
+      // --- COMPONENT RENDERERS ---
+
+      function renderProgressBar() {
+        const current = state.currentIndex + 1;
+        const total = EXERCISE_DATA.length;
+        const percentage = Math.min(100, Math.max(0, ((current) / total) * 100));
+        return `
+          <div class="w-full bg-slate-200 rounded-full h-2.5 mb-6">
+            <div
+              class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              style="width: ${percentage}%"
+            ></div>
+            <div class="text-xs text-slate-500 mt-1 text-right">
+              ${current} / ${total}
+            </div>
+          </div>
+        `;
+      }
+
+      function getFormattedDate() {
+        const now = new Date();
+        return now.toLocaleString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+
+      // --- MAIN RENDER FUNCTION ---
+      function render() {
+        const root = document.getElementById('root');
+        
+        // --- 1. START SCREEN ---
+        if (!state.isStarted) {
+          root.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+              <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
+                <div class="text-center mb-8">
+                  <h1 class="text-3xl font-extrabold text-slate-900 mb-2">ტექსტის რედაქტირება</h1>
+                  <p class="text-slate-600">შეიყვანეთ თქვენი მონაცემები სავარჯიშოს დასაწყებად</p>
+                </div>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label for="userName" class="block text-sm font-medium text-slate-700 mb-1">სახელი და გვარი</label>
+                    <input 
+                      type="text" 
+                      id="userName" 
+                      value="${state.userName}"
+                      placeholder="მაგ: კოტე ლომიძე"
+                      class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      oninput="window.handleNameInput(this.value)"
+                    />
+                  </div>
+                  
+                  <button
+                    onclick="window.handleStart()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md ${!state.userName.trim() ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${!state.userName.trim() ? 'disabled' : ''}
+                  >
+                    დაწყება
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 2. FINISHED SCREEN ---
+        if (state.isFinished) {
+          root.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+              <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full text-center">
+                <div class="mb-6 flex justify-center">
+                   <span class="text-6xl">🎉</span>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">სავარჯიშო დასრულებულია!</h1>
+                <p class="text-lg text-slate-800 font-medium mb-8">${state.userName}</p>
+                
+                <div class="space-y-3">
+                  <button
+                    id="sendBtn"
+                    onclick="window.handleSendReport()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                    შედეგის გაგზავნა
+                  </button>
+
+                  <button
+                    onclick="window.handleRestart()"
+                    class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3 px-6 rounded-lg transition-colors border border-slate-300"
+                  >
+                    თავიდან დაწყება
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // --- 3. EXERCISE SCREEN ---
+        const currentSentence = EXERCISE_DATA[state.currentIndex];
+        
+        // Static Styling
+        let cardBorderClass = 'border-slate-200';
+        let textareaClass = 'bg-white border-slate-300 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500';
+
+        root.innerHTML = `
+          <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mx-auto">
+              
+              <div class="mb-4 flex justify-between items-end">
+                <div>
+                   <h1 class="text-3xl font-extrabold text-slate-900 mb-1">ტექსტის რედაქტორი</h1>
+                   <p class="text-slate-600 text-sm">მოსწავლე: <span class="font-semibold text-slate-800">${state.userName}</span></p>
+                </div>
+              </div>
+
+              ${renderProgressBar()}
+
+              <div class="bg-white rounded-xl shadow-lg border transition-colors duration-300 overflow-hidden ${cardBorderClass}">
+                
+                <div class="p-6 sm:p-8">
+                  <label for="editor" class="block text-sm font-medium text-slate-700 mb-2">
+                    დაარედაქტირეთ წინადადება:
+                  </label>
+                  <textarea
+                    id="editor"
+                    rows="4"
+                    class="w-full p-4 text-lg rounded-lg border focus:ring-2 focus:outline-none transition-all resize-none ${textareaClass}"
+                  >${state.userInput}</textarea>
+                </div>
+
+                <div class="bg-slate-50 px-6 py-4 flex justify-between items-center border-t border-slate-200">
+                   <div class="text-sm text-slate-500">
+                     ${state.currentIndex + 1} / ${EXERCISE_DATA.length}
+                   </div>
+                   <div>
+                       <button
+                         onclick="window.handleNext()"
+                         class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm flex items-center"
+                       >
+                         შემდეგი
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                         </svg>
+                       </button>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Re-attach listeners after rendering
+        const textarea = document.getElementById('editor');
+        if (textarea) {
+            textarea.addEventListener('input', (e) => {
+                state.userInput = e.target.value;
+            });
+            // Focus textarea on load
+            textarea.focus();
+        }
+      }
+
+      // --- HANDLERS ---
+      
+      window.handleNameInput = function(value) {
+        state.userName = value;
+        // Re-render to update button state
+        const btn = document.querySelector('button');
+        if (btn) {
+           if (value.trim()) {
+             btn.disabled = false;
+             btn.classList.remove('opacity-50', 'cursor-not-allowed');
+           } else {
+             btn.disabled = true;
+             btn.classList.add('opacity-50', 'cursor-not-allowed');
+           }
+        }
+      };
+
+      window.handleStart = function() {
+        if (!state.userName.trim()) return;
+        state.isStarted = true;
+        render();
+      };
+
+      window.handleNext = function() {
+        // Calculate correctness silently
+        const currentData = EXERCISE_DATA[state.currentIndex];
+        const normalizedInput = state.userInput.trim();
+        const normalizedCorrect = currentData.corrected.trim();
+        const isCorrect = normalizedInput === normalizedCorrect;
+
+        // Record result
+        state.results.push({
+          id: currentData.id,
+          original: currentData.original,
+          corrected: currentData.corrected,
+          userInput: state.userInput,
+          isCorrect: isCorrect
+        });
+
+        if (state.currentIndex < EXERCISE_DATA.length - 1) {
+          state.currentIndex++;
+          state.userInput = EXERCISE_DATA[state.currentIndex].original;
+          render();
+        } else {
+          state.isFinished = true;
+          render();
+        }
+      };
+
+      window.handleRestart = function() {
+        // Keep userName and isStarted, reset game state
+        state.currentIndex = 0;
+        state.userInput = EXERCISE_DATA[0].original;
+        state.isFinished = false;
+        state.results = [];
+        render();
+      };
+
+      window.handleSendReport = async function() {
+        const btn = document.getElementById('sendBtn');
+        if(btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                იგზავნება...
+            `;
+        }
+
+        const date = getFormattedDate();
+        const correctCount = state.results.filter(r => r.isCorrect).length;
+        const total = EXERCISE_DATA.length;
+        const percent = Math.round((correctCount / total) * 100);
+
+        // Build report text for the 'message' field
+        let report = `მოსწავლე: ${state.userName}\n`;
+        report += `თარიღი: ${date}\n`;
+        report += `შედეგი: ${correctCount} / ${total} (${percent}%)\n\n`;
+        report += `დეტალური ანგარიში:\n`;
+        report += `-------------------\n`;
+
+        state.results.forEach((res, index) => {
+           const icon = res.isCorrect ? "✅ სწორია" : "❌ შეცდომაა";
+           report += `${index + 1}. ${icon}\n`;
+           if (!res.isCorrect) {
+             report += `   თქვენი ვერსია: ${res.userInput}\n`;
+             report += `   სწორი ვერსია:  ${res.corrected}\n`;
+           } else {
+             report += `   ${res.corrected}\n`;
+           }
+           report += `\n`;
+        });
+
+        try {
+            const response = await fetch("https://formspree.io/f/xovnbldd", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    name: state.userName,
+                    message: report,
+                    _subject: `Text Editor Result: ${state.userName}`
+                })
+            });
+
+            if (response.ok) {
+                alert("შედეგი წარმატებით გაიგზავნა!");
+                if(btn) {
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        გაგზავნილია
+                    `;
+                }
+            } else {
+                alert("შეცდომა გაგზავნისას. გთხოვთ სცადოთ მოგვიანებით.");
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                           <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                        </svg>
+                        შედეგის გაგზავნა
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error("Sending error:", error);
+            alert("შეცდომა გაგზავნისას.");
+            if(btn) {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                       <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                    შედეგის გაგზავნა
+                `;
+            }
+        }
+      };
+
+      // --- INIT ---
+      state.userInput = EXERCISE_DATA[0].original;
+      render();
+
+    </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
